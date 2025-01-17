@@ -23,7 +23,7 @@ app.use(express.static("public"));
 // return a jwt token on successful authentication
 app.post("/getToken", (req, res) => {
   const { username, password } = req.body;
-  
+
   bcrypt.hash(password, 10).then((hashedPassword) => {
     console.log(hashedPassword);
 
@@ -58,22 +58,17 @@ app.use((err, req, res, next) => {
   res.status(500).json({ message: "Internal server error" });
 });
 
-app.get("/", (req, res) => {
-  res.send("<h1>hello</h1>");
-});
-
-app.use(expressjwt({ secret: process.env.JWT_SECRET, algorithms: ["HS256"] }));
-// jwt protected read, update, delete operations, output to .json file, return the affected object
+// jwt protected create, update, delete operations, output to .json file, return the affected object
 app.post("/cards/create", validateJwt, (req, res) => {});
 app.put("/cards/:id", validateJwt, (req, res) => {});
 app.delete("/cards/:id", validateJwt, (req, res) => {});
 
 // read stuff
-app.get("/cards/count", validateJwt, (req, res) => {
-  res.json({ thing: "hello" });
+app.get("/cards", (req, res) => {
+  // allow using query params for filtering
 });
 app.get("/cards/random", (req, res) => {});
-app.get("/cards?", (req, res) => {});
+app.get("/cards/count", (req, res) => {});
 
 // read stuff but special (go through properties of cards maybe?)
 app.get("/sets", (req, res) => {});

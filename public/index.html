@@ -7,7 +7,29 @@
     <script defer src="index.js"></script>
   </head>
   <body>
-    test
+    <div>
+      <h3>search for cards with filters</h3>
+      <p>
+        multiple names, sets, etc can be searched by making a comma separated
+        list, ex: "name1,name2,name3"
+      </p>
+      <form method="get">
+        <!-- add sets, types, rarities, and name -->
+        <label>
+          name:
+          <input type="text" />
+        </label>
+        <br />
+        <label>
+          set:
+          <input type="text" />
+        </label>
+        <br />
+        <label> type: <input type="text" />
+        </label>
+      </form>
+      <div id="searchResult"></div>
+    </div>
     <button id="test">do thing requiring token</button>
     <button id="test2">get token</button>
   </body>
