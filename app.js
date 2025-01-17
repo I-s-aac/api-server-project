@@ -24,7 +24,7 @@ app.get("/getToken", (req, res) => {
     expiresIn: "10m",
     algorithm: "HS256",
   }); // Token expires in 10 minutes
-  res.json({ token });
+  res.json(token);
 });
 
 // validate jwts
