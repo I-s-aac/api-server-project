@@ -5,11 +5,14 @@ const __dirname = path.dirname(__filename);
 import express from "express";
 import jwt from "jsonwebtoken";
 import { expressjwt } from "express-jwt";
+import fs from "fs";
+import bcrypt from "bcrypt";
 
 const app = express();
 const port = 3000;
+const userFile = "./users.json";
 
-if (!process.env.SECRET) {
+if (!process.env.JWT_SECRET || !process.env.USER_PASSWORD_ENCRYPTION) {
   console.log("no secret");
 }
 
@@ -18,18 +21,26 @@ app.use(express.urlencoded({ extended: false }));
 app.use(express.static("public"));
 
 // return a jwt token on successful authentication
-app.get("/getToken", (req, res) => {
-  const payload = { username: "exampleUser" }; // Customize payload as needed
-  const token = jwt.sign(payload, process.env.SECRET, {
-    expiresIn: "10m",
-    algorithm: "HS256",
-  }); // Token expires in 10 minutes
-  res.json(token);
+app.post("/getToken", (req, res) => {
+  const { username, password } = req.body;
+  
+  bcrypt.hash(password, 10).then((hashedPassword) => {
+    console.log(hashedPassword);
+
+    const payload = { username: username };
+
+    const token = jwt.sign(payload, process.env.JWT_SECRET, {
+      expiresIn: "3s",
+      algorithm: "HS256",
+    });
+
+    res.json({ token: token });
+  });
 });
 
 // validate jwts
 const validateJwt = expressjwt({
-  secret: process.env.SECRET, // Same secret key used for signing tokens
+  secret: process.env.JWT_SECRET, // Same secret key used for signing tokens
   algorithms: ["HS256"], // Algorithm used to sign the tokens
 });
 
@@ -51,6 +62,7 @@ app.get("/", (req, res) => {
   res.send("<h1>hello</h1>");
 });
 
+app.use(expressjwt({ secret: process.env.JWT_SECRET, algorithms: ["HS256"] }));
 // jwt protected read, update, delete operations, output to .json file, return the affected object
 app.post("/cards/create", validateJwt, (req, res) => {});
 app.put("/cards/:id", validateJwt, (req, res) => {});
@@ -58,9 +70,7 @@ app.delete("/cards/:id", validateJwt, (req, res) => {});
 
 // read stuff
 app.get("/cards/count", validateJwt, (req, res) => {
-  const thing = req.headers.authorization;
-  console.log(thing);
-  res.send("<h1>test</h1>");
+  res.json({ thing: "hello" });
 });
 app.get("/cards/random", (req, res) => {});
 app.get("/cards?", (req, res) => {});
