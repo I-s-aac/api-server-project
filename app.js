@@ -65,7 +65,9 @@ app.delete("/cards/:id", validateJwt, (req, res) => {});
 
 // read stuff
 app.get("/cards", (req, res) => {
-  // allow using query params for filtering
+  const filter = req.query;
+  console.log(filter);
+  res.json({cardStuff: "stuff"});
 });
 app.get("/cards/random", (req, res) => {});
 app.get("/cards/count", (req, res) => {});

@@ -1,5 +1,5 @@
-const button = document.getElementById("test");
-const button2 = document.getElementById("test2");
+const searchResultDiv = document.getElementById("searchResult");
+const searchForm = document.getElementById("searchForm");
 
 const login = async (username, password) => {
   const resp = await fetch(`http://localhost:3000/getToken`, {
@@ -17,17 +17,13 @@ const login = async (username, password) => {
   const data = await resp.json();
   // Save your token in session storage
   sessionStorage.setItem("jwt-token", data.token);
-
 };
 
-const test = async () => {
-  const token = sessionStorage.getItem("jwt-token");
-
-  const resp = await fetch(`http://localhost:3000/cards/count`, {
+const readData = async (path) => {
+  const resp = await fetch(`http://localhost:3000/${path}`, {
     method: "GET",
     headers: {
       "Content-Type": "application/json",
-      Authorization: "Bearer " + token, // ⬅⬅⬅ authorization token
     },
   });
 
@@ -40,13 +36,40 @@ const test = async () => {
   }
 
   const data = await resp.json();
-  console.log(data);
   return data;
 };
 
-button.addEventListener("click", (ev) => {
-  test();
-});
-button2.addEventListener("click", (ev) => {
-  login("test", "test");
+const readProtectedData = async (path) => {
+  const token = sessionStorage.getItem("jwt-token");
+
+  const resp = await fetch(`http://localhost:3000/${path}`, {
+    method: "GET",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: "Bearer " + token,
+    },
+  });
+
+  if (!resp.ok) {
+    if (resp.status === 403) {
+      throw Error("There was a problem in the login request");
+    } else {
+      throw Error("Unknown error");
+    }
+  }
+
+  const data = await resp.json();
+  return data;
+};
+
+searchForm.addEventListener("submit", async (ev) => {
+  ev.preventDefault();
+  const query = new URLSearchParams({
+    name: document.getElementById("name").value,
+    type: document.getElementById("type").value,
+    rarity: document.getElementById("rarity").value,
+    set: document.getElementById("set").value,
+  });
+  const data = await readData(`cards?${query.toString()}`);
+  console.log(data);
 });

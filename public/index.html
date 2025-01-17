@@ -13,24 +13,31 @@
         multiple names, sets, etc can be searched by making a comma separated
         list, ex: "name1,name2,name3"
       </p>
-      <form method="get">
-        <!-- add sets, types, rarities, and name -->
+      <form method="get" action="/cards" id="searchForm">
         <label>
-          name:
-          <input type="text" />
+          name(s):
+          <input type="text" name="name" id="name" />
         </label>
         <br />
         <label>
-          set:
-          <input type="text" />
+          type(s):
+          <input type="text" name="type" id="type" />
         </label>
         <br />
-        <label> type: <input type="text" />
+        <label>
+          rarity(ies):
+          <input type="text" name="rarity" id="rarity" />
         </label>
+        <br />
+        <label>
+          set(s):
+          <input type="text" name="set" id="set" />
+        </label>
+        <br />
+
+        <input type="submit" value="search" />
       </form>
       <div id="searchResult"></div>
     </div>
-    <button id="test">do thing requiring token</button>
-    <button id="test2">get token</button>
   </body>
 </html>
