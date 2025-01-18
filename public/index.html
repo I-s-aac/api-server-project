@@ -16,28 +16,49 @@
       <form method="get" action="/cards" id="searchForm">
         <label>
           name(s):
-          <input type="text" name="name" id="name" />
+          <input type="text" name="searchName" id="searchName" />
         </label>
         <br />
         <label>
           type(s):
-          <input type="text" name="type" id="type" />
+          <input type="text" name="searchType" id="searchType" />
         </label>
         <br />
         <label>
           rarity(ies):
-          <input type="text" name="rarity" id="rarity" />
+          <input type="text" name="searchRarity" id="searchRarity" />
         </label>
         <br />
         <label>
           set(s):
-          <input type="text" name="set" id="set" />
+          <input type="text" name="searchSet" id="searchSet" />
         </label>
         <br />
 
         <input type="submit" value="search" />
       </form>
       <div id="searchResult"></div>
+    </div>
+    <br />
+    <form method="post" id="loginForm">
+      <h3>sign in/sign up</h3>
+      <label>
+        username:
+        <input type="text" name="username" id="username" />
+      </label>
+      <br />
+      <label>
+        password:
+        <input type="password" name="password" id="password" />
+      </label>
+      <br />
+      <input type="submit" value="register/sign in" />
+    </form>
+    <div>
+      <h3>create cards (requires login)</h3>
+      <div class=".hiddenUntilAuth" style="display: none">
+        <form method="post" action="/cards/create">test</form>
+      </div>
     </div>
   </body>
 </html>
