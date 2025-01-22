@@ -196,12 +196,16 @@ app.post(
       .isInt()
       .withMessage("cost should be an integer")
       .notEmpty()
-      .withMessage("cost is required")
+      .withMessage("cost is required"),
   ],
   async (req, res) => {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
-      return res.status(400).json({ errors: errors.array() });
+      let problems = [];
+      for (const error of errors.errors) {
+        problems.push(error.msg);
+      }
+      return res.status(400).json(JSON.stringify(problems));
     }
     const { name, type, rarity, set, power, toughness, cost } = req.body;
 
@@ -242,7 +246,6 @@ app.post(
 
       // Add the new card to the array
       cards.push(newCard);
-
       // Save the updated cards array back to the file
       await fs.writeFile(cardsFile, JSON.stringify(cards, null, 2), {
         encoding: "utf8",

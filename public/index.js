@@ -86,11 +86,15 @@ const postProtectedData = async (path, data) => {
   if (!resp.ok) {
     if (resp.status === 403) {
       throw Error("There was a problem in the login request");
+    } else if (resp.status === 400) {
+      const message = `problem(s) with request: ${await resp.json()}`;
+      console.error(message);
+      return message;
+      // throw Error(message);
     } else {
       throw Error("Unknown error");
     }
   }
-
   return await resp.json();
 };
 
@@ -150,8 +154,11 @@ createForm.addEventListener("submit", async (ev) => {
   };
 
   const card = await postProtectedData("cards/create", newCard);
+  console.log(card);
 
-  createResultDiv.innerHTML = `
+  createResultDiv.innerHTML =
+    typeof card !== "string"
+      ? `
       <h3>${card.name}</h3>
       <p><strong>Set:</strong> ${card.set}</p>
       <p><strong>Card Number:</strong> ${card.cardNumber}</p>
@@ -161,5 +168,6 @@ createForm.addEventListener("submit", async (ev) => {
       <p><strong>Rarity:</strong> ${card.rarity}</p>
       <p><strong>Cost:</strong> ${card.cost}</p>
       <p>id: ${card.id}</p>
-    `;
+    `
+      : `<p>${card}</p>`;
 });
