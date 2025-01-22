@@ -5,68 +5,48 @@ const __dirname = path.dirname(__filename);
 import express from "express";
 import jwt from "jsonwebtoken";
 import { expressjwt } from "express-jwt";
-import fs from "fs";
+import fsCallback from "node:fs";
+import fsPromise from "node:fs/promises";
 import bcrypt from "bcrypt";
 import { body, validationResult } from "express-validator";
 
 const app = express();
 const port = 3000;
-const usersFile = "users.json";
 
-const initializeUsersFile = async () => {
+const usersFile = path.join(__dirname, "users.json");
+
+const getUsers = async () => {
+  let data = undefined;
   try {
-    // Check if the file exists
-    fs.access(usersFile, (err) => {
-      if (err) {
-        // If the file does not exist, create it with an empty array
-        console.log(`${usersFile} not found. Creating a new one.`);
-        fs.writeFile(
-          usersFile,
-          JSON.stringify([], null, 2),
-          { encoding: "utf8" },
-          (err) => {
-            if (err) throw err;
-          }
-        );
-        return [];
-      } else {
-        console.log("file written correctly probably");
-      }
-    });
-    console.log("test")
-
-    // Read and parse the file
-    const data = fs.readFile(usersFile, { encoding: "utf8" }, (err) => {
-      if (err) throw err;
-    });
-    console.log(data);
-    // If the file is empty, reset it to an empty array
-    if (!data.trim()) {
-      console.log(`${usersFile} is empty. Resetting to an empty array.`);
-      fs.writeFile(
-        usersFile,
-        JSON.stringify([], null, 2),
-        { encoding: "utf8" },
-        (err) => {
-          if (err) throw err;
-        }
-      );
-      return [];
-    }
-    console.log("test");
-    const users = JSON.parse(data);
-
-    // Validate the file content
-    if (!Array.isArray(users)) {
-      console.error(`${usersFile} data corrupted. Expected an array.`);
-      process.exit(1); // Exit the server
-    }
-
-    return users; // Return parsed users array
-  } catch (error) {
-    console.error("Error initializing users.json:", error);
-    process.exit(1); // Exit the server on unexpected errors
+    data = await fsPromise.readFile(usersFile, { encoding: "utf8" });
+  } catch (err) {
+    console.log("error reading file: ", err);
+    data = undefined;
   }
+
+  if (data === undefined) {
+    await fsPromise.writeFile(usersFile, JSON.stringify([], null, 2), {
+      encoding: "utf8",
+    });
+    return [];
+  }
+  // If the file is empty, reset it to an empty array
+  if (!data.trim()) {
+    console.log(`${usersFile} is empty. Resetting to an empty array.`);
+    await fsPromise.writeFile(usersFile, JSON.stringify([], null, 2), {
+      encoding: "utf8",
+    });
+    return [];
+  }
+  const users = JSON.parse(data);
+
+  // Validate the file content
+  if (!Array.isArray(users)) {
+    console.error(`${usersFile} data corrupted. Expected an array.`);
+    return [];
+  }
+
+  return users; // Return parsed users array
 };
 
 if (!process.env.JWT_SECRET || !process.env.USER_PASSWORD_ENCRYPTION) {
@@ -103,22 +83,9 @@ app.post(
     }
 
     const { username, password } = req.body;
-    try {
-      // console.log(fs.readFileSync("users.json", {encoding: "utf8"}));
-      const users = await initializeUsersFile();
-      console.log(users);
-      // Simulated user validation (e.g., checking username exists in a database)
-      const validUsername = "exampleUser";
-      const validPasswordHash = await bcrypt.hash("examplePassword", 10); // Pre-stored hash for testing
+    const users = await getUsers();
 
-      if (username !== validUsername) {
-        return res.status(401).json({ error: "Invalid username or password" });
-      }
-      const passwordMatch = await bcrypt.compare(password, validPasswordHash);
-      if (!passwordMatch) {
-        return res.status(401).json({ error: "Invalid username or password" });
-      }
-
+    const sendToken = () => {
       // Generate JWT token
       const payload = { username: username };
       const token = jwt.sign(payload, process.env.JWT_SECRET, {
@@ -127,9 +94,44 @@ app.post(
       });
 
       res.json({ token: token });
-    } catch (error) {
-      console.error("Error generating token:", error);
-      res.status(500).json({ error: "Internal server error" });
+    };
+
+    let storedPassword = null;
+    let storedUsername = null;
+
+    let foundUser = false;
+    for (const storedUser of users) {
+      if (username === storedUser.username) {
+        if (foundUser) {
+          console.log("duplicate user exists apparently");
+        }
+        storedUsername = storedUser.username;
+        storedPassword = storedUser.password;
+        foundUser = true;
+      }
+    }
+
+    if (storedUsername && storedPassword) {
+      const passwordMatch = await bcrypt.compare(password, storedPassword);
+      if (!passwordMatch) {
+        return res.status(401).json({ error: "Invalid username or password" });
+      }
+
+      console.log("loaded a previously existing user");
+      sendToken();
+    } else if (true) {
+      // create a user with this username and password
+      const hashedPassword = await bcrypt.hash(password, 10);
+      const user = {
+        username: username,
+        password: hashedPassword,
+      };
+      users.push(user);
+      await fsPromise.writeFile(usersFile, JSON.stringify(users, null, 2), {
+        encoding: "utf8",
+      });
+      console.log("created new user");
+      sendToken();
     }
   }
 );
@@ -175,5 +177,17 @@ app.get("/rarities", (req, res) => {});
 
 // start server
 app.listen(port, () => {
-  console.log(`server running on port ${port}`);
+  const date = new Date();
+  console.log(
+    `server running on port ${port} at ${date.getHours()}:${date.getMinutes()}:${date.getSeconds()}`
+  );
+});
+
+// this exists bc testing
+process.stdin.setEncoding("utf8");
+process.stdin.on("data", (data) => {
+  if (data.trim() === "clear users") {
+    fsPromise.writeFile(usersFile, "", { encoding: "utf8" });
+    console.log("clearing users");
+  }
 });

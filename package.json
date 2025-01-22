@@ -6,7 +6,7 @@
   "type": "module",
   "scripts": {
     "localwatch": "node --env-file=.env --watch app.js",
-    "local": "nodemon --env-file=.env app.js",
+    "local": "nodemon --env-file=.env --ignore users.json app.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [],
