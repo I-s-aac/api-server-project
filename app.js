@@ -5,8 +5,7 @@ const __dirname = path.dirname(__filename);
 import express from "express";
 import jwt from "jsonwebtoken";
 import { expressjwt } from "express-jwt";
-import fsCallback from "node:fs";
-import fsPromise from "node:fs/promises";
+import fs from "node:fs/promises";
 import bcrypt from "bcrypt";
 import { body, validationResult } from "express-validator";
 
@@ -18,14 +17,14 @@ const usersFile = path.join(__dirname, "users.json");
 const getUsers = async () => {
   let data = undefined;
   try {
-    data = await fsPromise.readFile(usersFile, { encoding: "utf8" });
+    data = await fs.readFile(usersFile, { encoding: "utf8" });
   } catch (err) {
     console.log("error reading file: ", err);
     data = undefined;
   }
 
   if (data === undefined) {
-    await fsPromise.writeFile(usersFile, JSON.stringify([], null, 2), {
+    await fs.writeFile(usersFile, JSON.stringify([], null, 2), {
       encoding: "utf8",
     });
     return [];
@@ -33,7 +32,7 @@ const getUsers = async () => {
   // If the file is empty, reset it to an empty array
   if (!data.trim()) {
     console.log(`${usersFile} is empty. Resetting to an empty array.`);
-    await fsPromise.writeFile(usersFile, JSON.stringify([], null, 2), {
+    await fs.writeFile(usersFile, JSON.stringify([], null, 2), {
       encoding: "utf8",
     });
     return [];
@@ -51,6 +50,7 @@ const getUsers = async () => {
 
 if (!process.env.JWT_SECRET || !process.env.USER_PASSWORD_ENCRYPTION) {
   console.log("no secret");
+  process.exit(1);
 }
 
 app.use(express.json());
@@ -89,7 +89,7 @@ app.post(
       // Generate JWT token
       const payload = { username: username };
       const token = jwt.sign(payload, process.env.JWT_SECRET, {
-        expiresIn: "3s", // Token expires in 3 seconds (for testing purposes)
+        expiresIn: "5m", // 5 minutes
         algorithm: "HS256",
       });
 
@@ -127,7 +127,7 @@ app.post(
         password: hashedPassword,
       };
       users.push(user);
-      await fsPromise.writeFile(usersFile, JSON.stringify(users, null, 2), {
+      await fs.writeFile(usersFile, JSON.stringify(users, null, 2), {
         encoding: "utf8",
       });
       console.log("created new user");
@@ -157,15 +157,139 @@ app.use((err, req, res, next) => {
 });
 
 // jwt protected create, update, delete operations, output to .json file, return the affected object
-app.post("/cards/create", validateJwt, (req, res) => {});
+app.post(
+  "/cards/create",
+  validateJwt,
+  [
+    // Validation rules
+    body("name")
+      .isAlphanumeric("en-US", { ignore: " " }) // Allow alphanumeric with spaces
+      .withMessage("Name must be alphanumeric")
+      .notEmpty()
+      .withMessage("Name is required"),
+    body("type")
+      .isAlphanumeric("en-US", { ignore: " " })
+      .withMessage("Type must be alphanumeric")
+      .notEmpty()
+      .withMessage("Type is required"),
+    body("rarity")
+      .isAlphanumeric("en-US", { ignore: " " })
+      .withMessage("Rarity must be alphanumeric")
+      .notEmpty()
+      .withMessage("Rarity is required"),
+    body("set")
+      .isAlphanumeric("en-US", { ignore: " " })
+      .withMessage("Set must be alphanumeric")
+      .notEmpty()
+      .withMessage("Set is required"),
+    body("power")
+      .isInt()
+      .withMessage("Power must be an integer")
+      .notEmpty()
+      .withMessage("Power is required"),
+    body("toughness")
+      .isInt()
+      .withMessage("Toughness must be an integer")
+      .notEmpty()
+      .withMessage("Toughness is required"),
+    body("cost")
+      .isInt()
+      .withMessage("cost should be an integer")
+      .notEmpty()
+      .withMessage("cost is required")
+  ],
+  async (req, res) => {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({ errors: errors.array() });
+    }
+    const { name, type, rarity, set, power, toughness, cost } = req.body;
+
+    if (!name || !type || !rarity || !set || !power || !toughness || !cost) {
+      return res.status(400).json({ error: "All fields are required" });
+    }
+
+    try {
+      const cardsFile = "cards.json";
+
+      // Read the existing cards from the file
+      let cards = [];
+      try {
+        const data = await fs.readFile(cardsFile, { encoding: "utf8" });
+        cards = JSON.parse(data);
+      } catch (err) {
+        if (err.code !== "ENOENT") {
+          throw err; // If it's not a "file not found" error, rethrow
+        }
+      }
+
+      // Generate a unique ID for the new card
+      let newId;
+      do {
+        newId = Math.floor(Math.random() * 1000000); // Example: Random ID
+      } while (cards.some((card) => card.id === newId));
+      // Create the new card object
+      const newCard = {
+        id: newId,
+        name,
+        type,
+        rarity,
+        set,
+        power,
+        toughness,
+        cost,
+      };
+
+      // Add the new card to the array
+      cards.push(newCard);
+
+      // Save the updated cards array back to the file
+      await fs.writeFile(cardsFile, JSON.stringify(cards, null, 2), {
+        encoding: "utf8",
+      });
+      // Respond with the newly created card
+      res.status(201).json(newCard);
+    } catch (error) {
+      console.error("Error creating card:", error);
+      res.status(500).json({ error: "Internal server error" });
+    }
+  }
+);
 app.put("/cards/:id", validateJwt, (req, res) => {});
 app.delete("/cards/:id", validateJwt, (req, res) => {});
 
 // read stuff
-app.get("/cards", (req, res) => {
-  const filter = req.query;
-  console.log(filter);
-  res.json({ cardStuff: "stuff" });
+app.get("/cards", async (req, res) => {
+  const { name, type, rarity, set, power, toughness } = req.query;
+
+  try {
+    // Read the cards.json file
+    const data = await fs.readFile(path.join(__dirname, "cards.json"), {
+      encoding: "utf8",
+    });
+
+    const cards = JSON.parse(data); // Parse the JSON data into an array
+    const filteredCards = []; // Array to store matching cards
+    // Loop through each card and check if any property matches the query
+    for (const card of cards.cards) {
+      if (
+        (name && card.name && card.name.toLowerCase() === name) ||
+        (type && card.type && card.type.toLowerCase() === type) ||
+        (rarity && card.rarity && card.rarity.toLowerCase() === rarity) ||
+        (set && card.set && card.set.toLowerCase() === set) ||
+        (power && card.power && card.power.toString() === power) ||
+        (toughness && card.toughness && card.toughness.toString() === toughness)
+      ) {
+        filteredCards.push(card); // Add the card if any property matches
+      }
+    }
+
+    // Return the filtered array of cards
+    res.json(filteredCards);
+  } catch (err) {
+    console.error("Error reading cards.json:", err);
+    res.status(500).json({ error: "Failed to retrieve cards" });
+  }
 });
 app.get("/cards/random", (req, res) => {});
 app.get("/cards/count", (req, res) => {});
@@ -187,7 +311,7 @@ app.listen(port, () => {
 process.stdin.setEncoding("utf8");
 process.stdin.on("data", (data) => {
   if (data.trim() === "clear users") {
-    fsPromise.writeFile(usersFile, "", { encoding: "utf8" });
+    fs.writeFile(usersFile, "", { encoding: "utf8" });
     console.log("clearing users");
   }
 });

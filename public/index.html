@@ -10,10 +10,6 @@
   <body>
     <div>
       <h3>search for cards with filters</h3>
-      <p>
-        multiple names, sets, etc can be searched by making a comma separated
-        list, ex: "name1,name2,name3"
-      </p>
       <form method="get" action="/cards" id="searchForm">
         <label>
           name(s):
@@ -33,6 +29,16 @@
         <label>
           set(s):
           <input type="text" name="searchSet" id="searchSet" />
+        </label>
+        <br />
+        <label>
+          toughness(s):
+          <input type="text" name="searchToughness" id="searchToughness" />
+        </label>
+        <br />
+        <label>
+          power(s):
+          <input type="text" name="searchPower" id="searchPower" />
         </label>
         <br />
 
@@ -58,7 +64,46 @@
     <div>
       <h3>create cards (requires login)</h3>
       <div class=".hiddenUntilAuth" style="display: none">
-        <form method="post" action="/cards/create">test</form>
+        <form method="post" action="/cards/create" id="createForm">
+          <label>
+            name:
+            <input type="text" name="createName" id="createName" />
+          </label>
+          <br />
+          <label>
+            type:
+            <input type="text" name="createType" id="createType" />
+          </label>
+          <br />
+          <label>
+            rarity:
+            <input type="text" name="createRarity" id="createRarity" />
+          </label>
+          <br />
+          <label>
+            set:
+            <input type="text" name="createSet" id="createSet" />
+          </label>
+          <br />
+          <label>
+            toughness:
+            <input type="text" name="createToughness" id="createToughness" />
+          </label>
+          <br />
+          <label>
+            power:
+            <input type="text" name="createPower" id="createPower" />
+          </label>
+          <br />
+          <label>
+            cost:
+            <input type="text" name="createCost" id="createCost" />
+          </label>
+          <br />
+
+          <input type="submit" value="create" />
+        </form>
+        <div id="createResult"></div>
       </div>
     </div>
   </body>
