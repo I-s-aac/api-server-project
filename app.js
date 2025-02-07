@@ -13,6 +13,7 @@ const app = express();
 const port = 3000;
 
 const usersFile = path.join(__dirname, "users.json");
+const cardsFile = path.join(__dirname, "cards.json");
 
 const getUsers = async () => {
   let data = undefined;
@@ -47,6 +48,17 @@ const getUsers = async () => {
 
   return users; // Return parsed users array
 };
+const ensureCardsFile = async () => {
+  try {
+    await fs.access(cardsFile);
+  } catch {
+    console.log("cards.json not found. Creating an empty array.");
+    await fs.writeFile(cardsFile, JSON.stringify([], null, 2), {
+      encoding: "utf8",
+    });
+  }
+};
+ensureCardsFile();
 
 if (!process.env.JWT_SECRET || !process.env.USER_PASSWORD_ENCRYPTION) {
   console.log("no secret");
@@ -385,68 +397,71 @@ app.get("/cards", async (req, res) => {
     });
 
     const cards = JSON.parse(data); // Parse the JSON data into an array
-    let filteredCards;
-    if (returnSpecial) {
-      switch (returnSpecial) {
-        case "all": {
-          filteredCards = cards;
-          break;
-        }
-        case "sets": {
-          filteredCards = [];
-          for (const card of cards) {
-            if (!filteredCards.some((fCard) => fCard === card.set)) {
-              filteredCards.push(card.set);
-            }
+    let filteredCards = null;
+
+    if (cards.length > 0) {
+      if (returnSpecial) {
+        switch (returnSpecial) {
+          case "all": {
+            filteredCards = cards;
+            break;
           }
-          break;
-        }
-        case "types": {
-          filteredCards = [];
-          for (const card of cards) {
-            if (!filteredCards.some((fCard) => fCard === card.type)) {
-              filteredCards.push(card.type);
+          case "sets": {
+            filteredCards = [];
+            for (const card of cards) {
+              if (!filteredCards.some((fCard) => fCard === card.set)) {
+                filteredCards.push(card.set);
+              }
             }
+            break;
           }
-          break;
-        }
-        case "random": {
-          filteredCards = [cards[Math.floor(Math.random() * cards.length)]];
-          break;
-        }
-        case "count": {
-          filteredCards = [cards.length];
-          break;
-        }
-        case "rarities": {
-          filteredCards = [];
-          for (const card of cards) {
-            if (!filteredCards.some((fCard) => fCard === card.rarity)) {
-              filteredCards.push(card.rarity);
+          case "types": {
+            filteredCards = [];
+            for (const card of cards) {
+              if (!filteredCards.some((fCard) => fCard === card.type)) {
+                filteredCards.push(card.type);
+              }
             }
+            break;
           }
-          break;
+          case "random": {
+            filteredCards = [cards[Math.floor(Math.random() * cards.length)]];
+            break;
+          }
+          case "count": {
+            filteredCards = [cards.length];
+            break;
+          }
+          case "rarities": {
+            filteredCards = [];
+            for (const card of cards) {
+              if (!filteredCards.some((fCard) => fCard === card.rarity)) {
+                filteredCards.push(card.rarity);
+              }
+            }
+            break;
+          }
+          default: {
+            console.log("invalid request");
+            res.status(400).json({
+              error: "invalid special for request",
+            });
+            break;
+          }
         }
-        default: {
-          console.log("invalid request");
-          res.status(400).json({
-            error: "invalid special for request",
-          });
-          break;
-        }
+      } else {
+        filteredCards = cards.filter(
+          (card) =>
+            (name && card.name && card.name.toLowerCase() === name) ||
+            (type && card.type && card.type.toLowerCase() === type) ||
+            (rarity && card.rarity && card.rarity.toLowerCase() === rarity) ||
+            (set && card.set && card.set.toLowerCase() === set) ||
+            (power && card.power && card.power.toString() === power) ||
+            (toughness &&
+              card.toughness &&
+              card.toughness.toString() === toughness)
+        );
       }
-    } else {
-      filteredCards = cards.filter(
-        (card) =>
-          (name && card.name && card.name.toLowerCase() === name) ||
-          (type && card.type && card.type.toLowerCase() === type) ||
-          (rarity && card.rarity && card.rarity.toLowerCase() === rarity) ||
-          (set && card.set && card.set.toLowerCase() === set) ||
-          (power && card.power && card.power.toString() === power) ||
-          (toughness &&
-            card.toughness &&
-            card.toughness.toString() === toughness)
-      );
     }
 
     // Return the filtered array of cards

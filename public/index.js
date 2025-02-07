@@ -113,12 +113,14 @@ searchForm.addEventListener("submit", async (ev) => {
   });
   const cards = await readData(`cards?${query.toString()}`);
   searchResultDiv.innerHTML = "";
-  cards.forEach((card) => {
-    const cardElement = document.createElement("div");
-    cardElement.classList.add("card");
 
-    // Add card details
-    cardElement.innerHTML = `
+  if (cards) {
+    cards.forEach((card) => {
+      const cardElement = document.createElement("div");
+      cardElement.classList.add("card");
+
+      // Add card details
+      cardElement.innerHTML = `
       <h3>${card.name}</h3>
       <p><strong>Set:</strong> ${card.set}</p>
       <p><strong>Card Number:</strong> ${card.cardNumber}</p>
@@ -130,9 +132,12 @@ searchForm.addEventListener("submit", async (ev) => {
       <p>id: ${card.id}</p>
     `;
 
-    // Append the card element to the grid
-    searchResultDiv.appendChild(cardElement);
-  });
+      // Append the card element to the grid
+      searchResultDiv.appendChild(cardElement);
+    });
+  } else {
+    searchResultDiv.innerText = "there are no cards";
+  }
 });
 
 const showCardsX = async (x) => {
@@ -141,6 +146,11 @@ const showCardsX = async (x) => {
   });
   const data = await readData(`cards?${query.toString()}`);
   searchResultDiv.innerHTML = "";
+
+  if (!data) {
+    searchResultDiv.innerText = "there are no cards";
+    return;
+  }
 
   if (x !== "random") {
     searchResultDiv.innerHTML = "<ul>";
@@ -192,12 +202,13 @@ document
     });
     const cards = await readData(`cards?${query.toString()}`);
     searchResultDiv.innerHTML = "";
-    cards.forEach((card) => {
-      const cardElement = document.createElement("div");
-      cardElement.classList.add("card");
+    if (cards) {
+      cards.forEach((card) => {
+        const cardElement = document.createElement("div");
+        cardElement.classList.add("card");
 
-      // Add card details
-      cardElement.innerHTML = `
+        // Add card details
+        cardElement.innerHTML = `
       <h3>${card.name}</h3>
       <p><strong>Set:</strong> ${card.set}</p>
       <p><strong>Card Number:</strong> ${card.cardNumber}</p>
@@ -209,9 +220,12 @@ document
       <p>id: ${card.id}</p>
     `;
 
-      // Append the card element to the grid
-      searchResultDiv.appendChild(cardElement);
-    });
+        // Append the card element to the grid
+        searchResultDiv.appendChild(cardElement);
+      });
+    } else {
+      searchResultDiv.innerText = "there are no cards";
+    }
   });
 
 loginForm.addEventListener("submit", async (ev) => {
