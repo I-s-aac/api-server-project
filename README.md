@@ -1,8 +1,8 @@
 # api-server-project
 
-to set up, download code and extract
-navigate a terminal to wherever you extracted it
-in that folder, run "npm install" to download dependencies
-make sure you have nodemon installed
-run "npm run local"
-go to http://localhost:3000 to test
+- Download the code and extract it  
+- Navigate a terminal to the extracted folder  
+- Run `npm install` to download dependencies  
+- Make sure you have `nodemon` installed  
+- Run `npm run local`  
+- Go to [http://localhost:3000](http://localhost:3000) to test  
