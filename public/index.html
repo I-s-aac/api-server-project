@@ -43,6 +43,7 @@
         <br />
 
         <input type="submit" value="search" />
+        <input type="button" id="showAllCards" value="show all cards" />
       </form>
       <div id="searchResult"></div>
     </div>
@@ -62,48 +63,60 @@
       <input type="submit" value="register/sign in" />
     </form>
     <div>
-      <h3>create cards (requires login)</h3>
+      <h3>create/update/delete cards (requires login)</h3>
       <div class=".hiddenUntilAuth" style="display: none">
-        <form method="post" action="/cards/create" id="createForm">
-          <label>
-            name:
-            <input type="text" name="createName" id="createName" />
-          </label>
-          <br />
-          <label>
-            type:
-            <input type="text" name="createType" id="createType" />
-          </label>
-          <br />
-          <label>
-            rarity:
-            <input type="text" name="createRarity" id="createRarity" />
-          </label>
-          <br />
-          <label>
-            set:
-            <input type="text" name="createSet" id="createSet" />
-          </label>
-          <br />
-          <label>
-            toughness:
-            <input type="text" name="createToughness" id="createToughness" />
-          </label>
-          <br />
-          <label>
-            power:
-            <input type="text" name="createPower" id="createPower" />
-          </label>
-          <br />
-          <label>
-            cost:
-            <input type="text" name="createCost" id="createCost" />
-          </label>
-          <br />
+        <label>
+          modify type:
+          <select id="modifySelect">
+            <option value="create">create</option>
+            <option value="update">update</option>
+            <option value="delete">delete</option>
+          </select>
+        </label>
+        <br /><br />
+        <label id="selectIdLabel" style="display: none">
+          id:
+          <input type="number" name="selectId" id="selectId" />
+        </label>
+        <br />
+        <label id="modifyNameLabel">
+          name:
+          <input type="text" name="modifyName" id="modifyName" />
+        </label>
+        <br />
+        <label id="modifyTypeLabel">
+          type:
+          <input type="text" name="modifyType" id="modifyType" />
+        </label>
+        <br />
+        <label id="modifyRarityLabel">
+          rarity:
+          <input type="text" name="modifyRarity" id="modifyRarity" />
+        </label>
+        <br />
+        <label id="modifySetLabel">
+          set:
+          <input type="text" name="modifySet" id="modifySet" />
+        </label>
+        <br />
+        <label id="modifyToughnessLabel">
+          toughness:
+          <input type="text" name="modifyToughness" id="modifyToughness" />
+        </label>
+        <br />
+        <label id="modifyPowerLabel">
+          power:
+          <input type="text" name="modifyPower" id="modifyPower" />
+        </label>
+        <br />
+        <label id="modifyCostLabel">
+          cost:
+          <input type="text" name="modifyCost" id="modifyCost" />
+        </label>
+        <br />
 
-          <input type="submit" value="create" />
-        </form>
-        <div id="createResult"></div>
+        <input type="button" value="create" id="modifySubmit" />
+        <div id="modifyResult"></div>
       </div>
     </div>
   </body>

@@ -232,6 +232,13 @@ app.post(
       do {
         newId = Math.floor(Math.random() * 1000000); // Example: Random ID
       } while (cards.some((card) => card.id === newId));
+
+      let cardNumber = 1;
+      for (const card of cards) {
+        if (card.cardNumber <= cardNumber) {
+          cardNumber = card.cardNumber + 1;
+        }
+      }
       // Create the new card object
       const newCard = {
         id: newId,
@@ -239,6 +246,7 @@ app.post(
         type,
         rarity,
         set,
+        cardNumber,
         power,
         toughness,
         cost,
@@ -259,11 +267,14 @@ app.post(
   }
 );
 app.put("/cards/:id", validateJwt, (req, res) => {});
-app.delete("/cards/:id", validateJwt, (req, res) => {});
+app.delete("/cards/:id", validateJwt, (req, res) => {
+  
+});
 
 // read stuff
 app.get("/cards", async (req, res) => {
-  const { name, type, rarity, set, power, toughness } = req.query;
+  const { name, type, rarity, set, power, toughness, returnAllCards } =
+    req.query;
 
   try {
     // Read the cards.json file
@@ -274,14 +285,17 @@ app.get("/cards", async (req, res) => {
     const cards = JSON.parse(data); // Parse the JSON data into an array
     const filteredCards = []; // Array to store matching cards
     // Loop through each card and check if any property matches the query
-    for (const card of cards.cards) {
+    for (const card of cards) {
       if (
         (name && card.name && card.name.toLowerCase() === name) ||
         (type && card.type && card.type.toLowerCase() === type) ||
         (rarity && card.rarity && card.rarity.toLowerCase() === rarity) ||
         (set && card.set && card.set.toLowerCase() === set) ||
         (power && card.power && card.power.toString() === power) ||
-        (toughness && card.toughness && card.toughness.toString() === toughness)
+        (toughness &&
+          card.toughness &&
+          card.toughness.toString() === toughness) ||
+        returnAllCards
       ) {
         filteredCards.push(card); // Add the card if any property matches
       }
@@ -315,6 +329,6 @@ process.stdin.setEncoding("utf8");
 process.stdin.on("data", (data) => {
   if (data.trim() === "clear users") {
     fs.writeFile(usersFile, "", { encoding: "utf8" });
-    console.log("clearing users");
+    console.log("users cleared");
   }
 });
