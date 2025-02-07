@@ -429,8 +429,8 @@ app.get("/cards", async (req, res) => {
         }
         default: {
           console.log("invalid request");
-          res.status(123412341243).json({
-            error: "invalid special for request and idk what code to use lol",
+          res.status(400).json({
+            error: "invalid special for request",
           });
           break;
         }
