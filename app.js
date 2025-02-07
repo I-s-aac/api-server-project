@@ -375,7 +375,7 @@ app.delete("/cards/:id", validateJwt, async (req, res) => {
 
 // read stuff
 app.get("/cards", async (req, res) => {
-  const { name, type, rarity, set, power, toughness, returnAllCards } =
+  const { name, type, rarity, set, power, toughness, returnSpecial } =
     req.query;
 
   try {
@@ -385,18 +385,69 @@ app.get("/cards", async (req, res) => {
     });
 
     const cards = JSON.parse(data); // Parse the JSON data into an array
-    const filteredCards = cards.filter(
-      (card) =>
-        (name && card.name && card.name.toLowerCase() === name) ||
-        (type && card.type && card.type.toLowerCase() === type) ||
-        (rarity && card.rarity && card.rarity.toLowerCase() === rarity) ||
-        (set && card.set && card.set.toLowerCase() === set) ||
-        (power && card.power && card.power.toString() === power) ||
-        (toughness &&
-          card.toughness &&
-          card.toughness.toString() === toughness) ||
-        returnAllCards
-    );
+    let filteredCards;
+    if (returnSpecial) {
+      switch (returnSpecial) {
+        case "all": {
+          filteredCards = cards;
+          break;
+        }
+        case "sets": {
+          filteredCards = [];
+          for (const card of cards) {
+            if (!filteredCards.some((fCard) => fCard === card.set)) {
+              filteredCards.push(card.set);
+            }
+          }
+          break;
+        }
+        case "types": {
+          filteredCards = [];
+          for (const card of cards) {
+            if (!filteredCards.some((fCard) => fCard === card.type)) {
+              filteredCards.push(card.type);
+            }
+          }
+          break;
+        }
+        case "random": {
+          filteredCards = [cards[Math.floor(Math.random() * cards.length)]];
+          break;
+        }
+        case "count": {
+          filteredCards = [cards.length];
+          break;
+        }
+        case "rarities": {
+          filteredCards = [];
+          for (const card of cards) {
+            if (!filteredCards.some((fCard) => fCard === card.rarity)) {
+              filteredCards.push(card.rarity);
+            }
+          }
+          break;
+        }
+        default: {
+          console.log("invalid request");
+          res.status(123412341243).json({
+            error: "invalid special for request and idk what code to use lol",
+          });
+          break;
+        }
+      }
+    } else {
+      filteredCards = cards.filter(
+        (card) =>
+          (name && card.name && card.name.toLowerCase() === name) ||
+          (type && card.type && card.type.toLowerCase() === type) ||
+          (rarity && card.rarity && card.rarity.toLowerCase() === rarity) ||
+          (set && card.set && card.set.toLowerCase() === set) ||
+          (power && card.power && card.power.toString() === power) ||
+          (toughness &&
+            card.toughness &&
+            card.toughness.toString() === toughness)
+      );
+    }
 
     // Return the filtered array of cards
     res.json(filteredCards);
@@ -408,7 +459,7 @@ app.get("/cards", async (req, res) => {
 app.get("/cards/random", (req, res) => {});
 app.get("/cards/count", (req, res) => {});
 
-// read stuff but special (go through properties of cards maybe?)
+// read stuff but special
 app.get("/sets", (req, res) => {});
 app.get("/types", (req, res) => {});
 app.get("/rarities", (req, res) => {});

@@ -135,11 +135,60 @@ searchForm.addEventListener("submit", async (ev) => {
   });
 });
 
+const showCardsX = async (x) => {
+  const query = new URLSearchParams({
+    returnSpecial: x,
+  });
+  const data = await readData(`cards?${query.toString()}`);
+  searchResultDiv.innerHTML = "";
+
+  if (x !== "random") {
+    searchResultDiv.innerHTML = "<ul>";
+    for (const point of data) {
+      searchResultDiv.innerHTML += `
+      <li>${point}</li>
+    `;
+    }
+    searchResultDiv.innerHTML += "</ul>";
+  } else {
+    const card = document.createElement("div");
+    card.classList.add("card");
+    card.innerHTML = `
+      <h3>${data[0].name}</h3>
+      <p><strong>Set:</strong> ${data[0].set}</p>
+      <p><strong>Card Number:</strong> ${data[0].cardNumber}</p>
+      <p><strong>Type:</strong> ${data[0].type}</p>
+      <p><strong>Power:</strong> ${data[0].power}</p>
+      <p><strong>Toughness:</strong> ${data[0].toughness}</p>
+      <p><strong>Rarity:</strong> ${data[0].rarity}</p>
+      <p><strong>Cost:</strong> ${data[0].cost}</p>
+      <p>id: ${data[0].id}</p>
+    `;
+    searchResultDiv.appendChild(card);
+  }
+};
+
+document.getElementById("showCardSets").addEventListener("click", (ev) => {
+  showCardsX("sets");
+});
+document.getElementById("showCardCount").addEventListener("click", (ev) => {
+  showCardsX("count");
+});
+document.getElementById("showCardTypes").addEventListener("click", (ev) => {
+  showCardsX("types");
+});
+document.getElementById("showCardRarities").addEventListener("click", (ev) => {
+  showCardsX("rarities");
+});
+document.getElementById("showRandomCard").addEventListener("click", (ev) => {
+  showCardsX("random");
+});
+
 document
   .getElementById("showAllCards")
   .addEventListener("click", async (ev) => {
     const query = new URLSearchParams({
-      returnAllCards: true,
+      returnSpecial: "all",
     });
     const cards = await readData(`cards?${query.toString()}`);
     searchResultDiv.innerHTML = "";
