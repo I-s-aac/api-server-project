@@ -24,7 +24,7 @@ const login = async (username, password) => {
   const data = await resp.json();
   // Save your token in session storage
   sessionStorage.setItem("jwt-token", data.token);
-  const elements = document.getElementsByClassName(".hiddenUntilAuth");
+  const elements = document.getElementsByClassName("hiddenUntilAuth");
   for (const element of elements) {
     element.style.display = "block";
   }
@@ -186,6 +186,12 @@ modifySubmit.addEventListener("click", async (ev) => {
     cost: document.getElementById("modifyCost").value,
   };
 
+  const token = sessionStorage.getItem("jwt-token");
+  if (!token) {
+    alert("must be logged in to do this");
+    return;
+  }
+
   switch (action) {
     case "create": {
       const newCard = data;
@@ -201,6 +207,7 @@ modifySubmit.addEventListener("click", async (ev) => {
       <p><strong>Set:</strong> ${card.set}</p>
       <p><strong>Type:</strong> ${card.type}</p>
       <p><strong>Power:</strong> ${card.power}</p>
+      <p><strong>Card Number:</strong> ${card.cardNumber}</p>
       <p><strong>Toughness:</strong> ${card.toughness}</p>
       <p><strong>Rarity:</strong> ${card.rarity}</p>
       <p><strong>Cost:</strong> ${card.cost}</p>
@@ -210,32 +217,103 @@ modifySubmit.addEventListener("click", async (ev) => {
       break;
     }
     case "update": {
+      const updateCard = async (id) => {
+        if (!id) return "id is required";
+
+        try {
+          const resp = await fetch(`/cards/${id}`, {
+            method: "PUT",
+            headers: {
+              Authorization: `Bearer ${token}`,
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify(data),
+          });
+
+          if (!resp.ok) {
+            if (resp.status === 403) throw new Error("Unauthorized request");
+            if (resp.status === 400) {
+              const message = `problem(s) with request: ${await resp.json()}`;
+              return message;
+            }
+            throw new Error("Unknown error");
+          }
+
+          return await resp.json();
+        } catch (error) {
+          console.error("Error updating:", error);
+          return "Error updating card.";
+        }
+      };
+
+      const card = await updateCard(data.id);
+      modifyResultDiv.innerHTML =
+        typeof card !== "string"
+          ? `
+      <h3>${card.name}</h3>
+      <p><strong>Set:</strong> ${card.set}</p>
+      <p><strong>Type:</strong> ${card.type}</p>
+      <p><strong>Power:</strong> ${card.power}</p>
+      <p><strong>Card Number:</strong> ${card.cardNumber}</p>
+      <p><strong>Toughness:</strong> ${card.toughness}</p>
+      <p><strong>Rarity:</strong> ${card.rarity}</p>
+      <p><strong>Cost:</strong> ${card.cost}</p>
+      <p>id: ${card.id}</p>
+      `
+          : `<p>${card}</p>`;
       break;
     }
     case "delete": {
-      const token = sessionStorage.getItem("jwt-token");
-      const deleteCard = (id) => {
-        fetch(`/cards/${id}`, {
-          method: "DELETE",
-          headers: {
-            Authorization: `Bearer ${token}`, // Include JWT if required
-            "Content-Type": "application/json",
-          },
-        })
-          .then((response) => {
-            if (!response.ok) {
-              throw new Error(`HTTP error! Status: ${response.status}`);
+      const deleteCard = async (id) => {
+        try {
+          const resp = await fetch(`/cards/${id}`, {
+            method: "DELETE",
+            headers: {
+              Authorization: `Bearer ${token}`,
+              "Content-Type": "application/json",
+            },
+          });
+
+          if (!resp.ok) {
+            if (resp.status === 403) {
+              throw new Error("There was a problem in the request");
+            } else if (resp.status === 400) {
+              const message = `problem(s) with request: ${await resp.json()}`;
+              console.error(message);
+              return message;
+            } else {
+              throw new Error("Unknown error");
             }
-            return response.json(); // Or response.text() if no JSON response
-          })
-          .then((data) => console.log("Deleted successfully:", data))
-          .catch((error) => console.error("Error deleting:", error));
+          }
+
+          return await resp.json(); // Ensure we return the response
+        } catch (error) {
+          console.error("Error deleting:", error);
+          return "Error deleting card.";
+        }
       };
-      const deletedThing = deleteCard(data.id);
+
+      const removedCard = await deleteCard(data.id);
+      modifyResultDiv.innerHTML =
+        typeof removedCard !== "string"
+          ? `
+          <h2>removed card:</h2>
+      <h3>${removedCard.name}</h3>
+      <p><strong>Set:</strong> ${removedCard.set}</p>
+      <p><strong>Type:</strong> ${removedCard.type}</p>
+      <p><strong>Power:</strong> ${removedCard.power}</p>
+      <p><strong>Card Number:</strong> ${removedCard.cardNumber}</p>
+      <p><strong>Toughness:</strong> ${removedCard.toughness}</p>
+      <p><strong>Rarity:</strong> ${removedCard.rarity}</p>
+      <p><strong>Cost:</strong> ${removedCard.cost}</p>
+      <p>id: ${removedCard.id}</p>
+      `
+          : `<p>${removedCard}</p>`;
       break;
     }
     default: {
       console.log("invalid option, did you mess with the html?");
+      break;
     }
   }
 });
@@ -245,7 +323,7 @@ modifySelect.addEventListener("change", (ev) => {
     element.style.display = "none";
   };
   const show = (element) => {
-    element.style.display = "block";
+    element.style.display = "inline";
   };
   const get = (id) => {
     return document.getElementById(id);
@@ -300,6 +378,7 @@ modifySelect.addEventListener("change", (ev) => {
       break;
     }
     default: {
+      console.log("invalid option, did you mess with the html?");
       break;
     }
   }

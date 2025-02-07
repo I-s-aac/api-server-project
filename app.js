@@ -7,7 +7,7 @@ import jwt from "jsonwebtoken";
 import { expressjwt } from "express-jwt";
 import fs from "node:fs/promises";
 import bcrypt from "bcrypt";
-import { body, validationResult } from "express-validator";
+import { body, param, validationResult } from "express-validator";
 
 const app = express();
 const port = 3000;
@@ -111,7 +111,7 @@ app.post(
       }
     }
 
-    if (storedUsername && storedPassword) {
+    if (storedUsername && storedPassword && foundUser) {
       const passwordMatch = await bcrypt.compare(password, storedPassword);
       if (!passwordMatch) {
         return res.status(401).json({ error: "Invalid username or password" });
@@ -119,7 +119,7 @@ app.post(
 
       console.log("loaded a previously existing user");
       sendToken();
-    } else if (true) {
+    } else {
       // create a user with this username and password
       const hashedPassword = await bcrypt.hash(password, 10);
       const user = {
@@ -266,9 +266,111 @@ app.post(
     }
   }
 );
-app.put("/cards/:id", validateJwt, (req, res) => {});
-app.delete("/cards/:id", validateJwt, (req, res) => {
-  
+app.put(
+  "/cards/:id",
+  validateJwt,
+  [
+    // Validation rules
+    param("id")
+      .isInt()
+      .withMessage("id must be an int")
+      .notEmpty()
+      .withMessage("id is required"),
+    body("name")
+      .isAlphanumeric("en-US", { ignore: " " }) // Allow alphanumeric with spaces
+      .withMessage("Name must be alphanumeric")
+      .notEmpty()
+      .withMessage("Name is required"),
+    body("type")
+      .isAlphanumeric("en-US", { ignore: " " })
+      .withMessage("Type must be alphanumeric")
+      .notEmpty()
+      .withMessage("Type is required"),
+    body("rarity")
+      .isAlphanumeric("en-US", { ignore: " " })
+      .withMessage("Rarity must be alphanumeric")
+      .notEmpty()
+      .withMessage("Rarity is required"),
+    body("set")
+      .isAlphanumeric("en-US", { ignore: " " })
+      .withMessage("Set must be alphanumeric")
+      .notEmpty()
+      .withMessage("Set is required"),
+    body("power")
+      .isInt()
+      .withMessage("Power must be an integer")
+      .notEmpty()
+      .withMessage("Power is required"),
+    body("toughness")
+      .isInt()
+      .withMessage("Toughness must be an integer")
+      .notEmpty()
+      .withMessage("Toughness is required"),
+    body("cost")
+      .isInt()
+      .withMessage("cost should be an integer")
+      .notEmpty()
+      .withMessage("cost is required"),
+  ],
+  (req, res) => {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      let problems = [];
+      for (const error of errors.errors) {
+        problems.push(error.msg);
+      }
+      return res.status(400).json(JSON.stringify(problems));
+    }
+    const { name, type, rarity, set, power, toughness, cost } = req.body;
+    const id = req.params.id;
+
+    if (
+      !id ||
+      !name ||
+      !type ||
+      !rarity ||
+      !set ||
+      !power ||
+      !toughness ||
+      !cost
+    ) {
+      return res.status(400).json({ error: "All fields are required" });
+    }
+  }
+);
+app.delete("/cards/:id", validateJwt, async (req, res) => {
+  const cardId = Number(req.params.id);
+  const cardsFile = "cards.json";
+
+  // Read the existing cards from the file
+  let cards = [];
+  try {
+    const data = await fs.readFile(cardsFile, { encoding: "utf8" });
+    cards = JSON.parse(data);
+  } catch (err) {
+    if (err.code !== "ENOENT") {
+      throw err; // If it's not a "file not found" error, rethrow
+    }
+  }
+
+  let removedCard;
+  cards = cards.filter((card) => {
+    if (card.id === cardId) {
+      removedCard = card;
+    }
+    return card.id !== cardId;
+  });
+
+  try {
+    await fs.writeFile(cardsFile, JSON.stringify(cards, null, 2), {
+      encoding: "utf8",
+    });
+    // Respond with the deleted card
+    res.status(201).json(removedCard);
+  } catch (error) {
+    console.error("Error deleting card:", error);
+    res.status(500).json({ error: "Internal server error" });
+  }
 });
 
 // read stuff
@@ -283,10 +385,8 @@ app.get("/cards", async (req, res) => {
     });
 
     const cards = JSON.parse(data); // Parse the JSON data into an array
-    const filteredCards = []; // Array to store matching cards
-    // Loop through each card and check if any property matches the query
-    for (const card of cards) {
-      if (
+    const filteredCards = cards.filter(
+      (card) =>
         (name && card.name && card.name.toLowerCase() === name) ||
         (type && card.type && card.type.toLowerCase() === type) ||
         (rarity && card.rarity && card.rarity.toLowerCase() === rarity) ||
@@ -296,10 +396,7 @@ app.get("/cards", async (req, res) => {
           card.toughness &&
           card.toughness.toString() === toughness) ||
         returnAllCards
-      ) {
-        filteredCards.push(card); // Add the card if any property matches
-      }
-    }
+    );
 
     // Return the filtered array of cards
     res.json(filteredCards);
